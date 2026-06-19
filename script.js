@@ -102,6 +102,16 @@ function initName() {
   }
 }
 
+// Klik nama untuk rename
+greetingName.addEventListener('click', () => {
+  nameInput.value = userName;
+  // Ganti judul modal jadi "Change your name?"
+  nameModal.querySelector('h2').textContent = userName ? 'Change your name?' : 'Welcome to your Dashboard!';
+  nameModal.querySelector('p').textContent = userName ? 'Enter a new name below.' : "What's your name?";
+  nameModal.classList.remove('hidden');
+  setTimeout(() => nameInput.focus(), 50);
+});
+
 nameSaveBtn.addEventListener('click', () => {
   const name = nameInput.value.trim();
   if (!name) return;

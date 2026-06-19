@@ -93,6 +93,12 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   line-height: 1.15;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.greeting-left h1:hover {
+  opacity: 0.75;
 }
 
 .greeting-right {
