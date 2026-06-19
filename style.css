@@ -87,6 +87,26 @@ body {
   text-align: right;
 }
 
+.clock-points-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+#points-badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  letter-spacing: 0.02em;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+
 #clock {
   font-size: 2rem;
   font-weight: 700;
@@ -319,6 +339,34 @@ button:active {
 .btn-delete:hover {
   border-color: var(--danger);
   color: var(--danger);
+}
+
+/* ⭐ Priority button */
+.btn-star {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 0.28rem 0.55rem;
+  font-size: 0.82rem;
+  border-radius: 5px;
+  line-height: 1;
+}
+
+.btn-star:hover {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.btn-star.active {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+/* Priority task row */
+.todo-item.priority {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.04);
 }
 
 /* ===== FOCUS TIMER ===== */

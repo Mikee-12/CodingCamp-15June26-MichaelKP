@@ -23,6 +23,7 @@ let tasks = load('tasks', []);
 let links = load('links', []);
 let isDark = load('darkMode', false);
 let userName = load('userName', '');
+let totalPoints = load('totalPoints', 0);
 let sortAsc = true;
 let editIndex = null;
 
@@ -63,6 +64,7 @@ const editModal = document.getElementById('edit-modal');
 const editInput = document.getElementById('edit-input');
 const editSaveBtn = document.getElementById('edit-save-btn');
 const editCancelBtn = document.getElementById('edit-cancel-btn');
+const pointsDisplay = document.getElementById('points-display');
 
 // ===== GREETING & CLOCK =====
 function updateClock() {
@@ -142,7 +144,25 @@ themeToggle.addEventListener('click', () => {
   applyTheme();
 });
 
+// ===== POINTS =====
+function calcPoints() {
+  // 5 pts per 10 minutes of timer duration
+  const mins = parseInt(timerDuration.value) || 25;
+  return Math.max(5, Math.ceil(mins / 10) * 5);
+}
+
+function renderPoints() {
+  pointsDisplay.textContent = totalPoints;
+}
+
 // ===== TO-DO LIST =====
+function getSortedTasks() {
+  // Priority tasks always on top (unless done), then the rest in original order
+  const priority = tasks.filter(t => t.priority && !t.done);
+  const normal   = tasks.filter(t => !t.priority || t.done);
+  return [...priority, ...normal];
+}
+
 function renderTasks() {
   todoList.innerHTML = '';
   if (tasks.length === 0) {
@@ -151,9 +171,16 @@ function renderTasks() {
   }
   todoEmpty.style.display = 'none';
 
-  tasks.forEach((task, index) => {
+  const sorted = getSortedTasks();
+
+  sorted.forEach((task) => {
+    // Find real index in tasks array (needed for mutations)
+    const index = tasks.indexOf(task);
+
     const li = document.createElement('li');
-    li.className = 'todo-item' + (task.done ? ' done' : '');
+    li.className = 'todo-item' +
+      (task.done ? ' done' : '') +
+      (task.priority && !task.done ? ' priority' : '');
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -168,6 +195,14 @@ function renderTasks() {
     const actions = document.createElement('div');
     actions.className = 'task-actions';
 
+    // ⭐ Priority button
+    const starBtn = document.createElement('button');
+    starBtn.className = 'btn-star' + (task.priority ? ' active' : '');
+    starBtn.textContent = '★';
+    starBtn.setAttribute('aria-label', task.priority ? 'Remove priority' : 'Set priority');
+    starBtn.title = task.priority ? 'Remove priority' : 'Set as priority';
+    starBtn.addEventListener('click', () => togglePriority(index));
+
     const editBtn = document.createElement('button');
     editBtn.className = 'btn-edit';
     editBtn.textContent = '✏️';
@@ -180,6 +215,7 @@ function renderTasks() {
     delBtn.setAttribute('aria-label', 'Delete task');
     delBtn.addEventListener('click', () => deleteTask(index));
 
+    actions.appendChild(starBtn);
     actions.appendChild(editBtn);
     actions.appendChild(delBtn);
     li.appendChild(checkbox);
@@ -205,14 +241,33 @@ function addTask() {
     return;
   }
 
-  tasks.push({ text, done: false });
+  tasks.push({ text, done: false, priority: false });
   save('tasks', tasks);
   todoInput.value = '';
   renderTasks();
 }
 
 function toggleTask(index) {
+  const wasNotDone = !tasks[index].done;
   tasks[index].done = !tasks[index].done;
+
+  // Kalau task baru selesai → tambah poin & lepas priority
+  if (wasNotDone) {
+    totalPoints += calcPoints();
+    tasks[index].priority = false;
+  } else {
+    // Uncheck → kurangi poin (min 0)
+    totalPoints = Math.max(0, totalPoints - calcPoints());
+  }
+
+  save('totalPoints', totalPoints);
+  save('tasks', tasks);
+  renderPoints();
+  renderTasks();
+}
+
+function togglePriority(index) {
+  tasks[index].priority = !tasks[index].priority;
   save('tasks', tasks);
   renderTasks();
 }
@@ -390,6 +445,7 @@ function init() {
   updateClock();
   setInterval(updateClock, 1000);
   updateTimerDisplay();
+  renderPoints();
   renderTasks();
   renderLinks();
 }
