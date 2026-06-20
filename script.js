@@ -1,17 +1,4 @@
-/* =============================================
-   LIFE DASHBOARD — app.js
-   Features:
-   ✅ Greeting + Clock + Date
-   ✅ Custom name (saved in localStorage)
-   ✅ Dark / Light mode toggle
-   ✅ To-Do List (add, edit, delete, done, save)
-   ✅ Prevent duplicate tasks
-   ✅ Sort tasks A-Z / Z-A
-   ✅ Focus Timer (adjustable duration)
-   ✅ Quick Links (add, delete, save)
-============================================= */
-
-// ===== STORAGE HELPERS =====
+// ===== STORAGE =====
 const save = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 const load = (key, fallback) => {
   const item = localStorage.getItem(key);
@@ -19,83 +6,72 @@ const load = (key, fallback) => {
 };
 
 // ===== STATE =====
-let tasks = load('tasks', []);
-let links = load('links', []);
-let isDark = load('darkMode', false);
-let userName = load('userName', '');
+let tasks       = load('tasks', []);
+let links       = load('links', []);
+let isDark      = load('darkMode', false);
+let userName    = load('userName', '');
 let totalPoints = load('totalPoints', 0);
-let sortAsc = true;
-let editIndex = null;
+let sortAsc     = true;
+let editIndex   = null;
 
-// Timer state
 let timerInterval = null;
-let timerRunning = false;
-let timerSeconds = 25 * 60;
+let timerRunning  = false;
+let timerSeconds  = 25 * 60;
 
-// ===== DOM REFS =====
-const greetingText = document.getElementById('greeting-text');
-const greetingName = document.getElementById('greeting-name');
-const clockEl = document.getElementById('clock');
-const dateEl = document.getElementById('date-display');
-
-const todoInput = document.getElementById('todo-input');
-const addTodoBtn = document.getElementById('add-todo-btn');
-const todoList = document.getElementById('todo-list');
-const todoEmpty = document.getElementById('todo-empty');
-const sortBtn = document.getElementById('sort-btn');
-
-const timerDisplay = document.getElementById('timer-display');
-const timerDuration = document.getElementById('timer-duration');
-const timerStart = document.getElementById('timer-start');
-const timerStop = document.getElementById('timer-stop');
-const timerReset = document.getElementById('timer-reset');
-
-const linkName = document.getElementById('link-name');
-const linkUrl = document.getElementById('link-url');
-const addLinkBtn = document.getElementById('add-link-btn');
-const linksContainer = document.getElementById('links-container');
-const linksEmpty = document.getElementById('links-empty');
-
-const themeToggle = document.getElementById('theme-toggle');
-const nameModal = document.getElementById('name-modal');
-const nameInput = document.getElementById('name-input');
-const nameSaveBtn = document.getElementById('name-save-btn');
-const editModal = document.getElementById('edit-modal');
-const editInput = document.getElementById('edit-input');
-const editSaveBtn = document.getElementById('edit-save-btn');
-const editCancelBtn = document.getElementById('edit-cancel-btn');
+// ===== DOM =====
+const greetingText  = document.getElementById('greeting-text');
+const greetingName  = document.getElementById('greeting-name');
+const clockEl       = document.getElementById('clock');
+const dateEl        = document.getElementById('date-display');
 const pointsDisplay = document.getElementById('points-display');
 
-// ===== GREETING & CLOCK =====
+const todoInput  = document.getElementById('todo-input');
+const addTodoBtn = document.getElementById('add-todo-btn');
+const todoList   = document.getElementById('todo-list');
+const todoEmpty  = document.getElementById('todo-empty');
+const sortBtn    = document.getElementById('sort-btn');
+
+const timerDisplay  = document.getElementById('timer-display');
+const timerDuration = document.getElementById('timer-duration');
+const timerStart    = document.getElementById('timer-start');
+const timerStop     = document.getElementById('timer-stop');
+const timerReset    = document.getElementById('timer-reset');
+
+const linkName       = document.getElementById('link-name');
+const linkUrl        = document.getElementById('link-url');
+const addLinkBtn     = document.getElementById('add-link-btn');
+const linksContainer = document.getElementById('links-container');
+const linksEmpty     = document.getElementById('links-empty');
+
+const themeToggle   = document.getElementById('theme-toggle');
+const nameModal     = document.getElementById('name-modal');
+const nameInput     = document.getElementById('name-input');
+const nameSaveBtn   = document.getElementById('name-save-btn');
+const editModal     = document.getElementById('edit-modal');
+const editInput     = document.getElementById('edit-input');
+const editSaveBtn   = document.getElementById('edit-save-btn');
+const editCancelBtn = document.getElementById('edit-cancel-btn');
+
+// ===== CLOCK =====
 function updateClock() {
   const now = new Date();
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  clockEl.textContent = `${h}:${m}:${s}`;
+  const pad = n => String(n).padStart(2, '0');
 
-  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  clockEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+  const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months = ['January','February','March','April','May','June',
                   'July','August','September','October','November','December'];
-  const day = days[now.getDay()];
-  const date = now.getDate();
-  const month = months[now.getMonth()];
-  const year = now.getFullYear();
-  dateEl.textContent = `${day}, ${date} ${month} ${year}`;
+  dateEl.textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
 
   const hour = now.getHours();
-  if (hour >= 5 && hour < 12) {
-    greetingText.textContent = 'Good morning,';
-  } else if (hour >= 12 && hour < 17) {
-    greetingText.textContent = 'Good afternoon,';
-  } else if (hour >= 17 && hour < 21) {
-    greetingText.textContent = 'Good evening,';
-  } else {
-    greetingText.textContent = 'Good night,';
-  }
+  greetingText.textContent =
+    hour >= 5  && hour < 12 ? 'Good morning,'  :
+    hour >= 12 && hour < 17 ? 'Good afternoon,' :
+    hour >= 17 && hour < 21 ? 'Good evening,'  : 'Good night,';
 }
 
-// ===== CUSTOM NAME =====
+// ===== NAME =====
 function initName() {
   if (userName) {
     greetingName.textContent = userName + '!';
@@ -104,38 +80,31 @@ function initName() {
   }
 }
 
-// Klik nama untuk rename
-greetingName.addEventListener('click', () => {
+function openNameModal() {
   nameInput.value = userName;
-  // Ganti judul modal jadi "Change your name?"
   nameModal.querySelector('h2').textContent = userName ? 'Change your name?' : 'Welcome to your Dashboard!';
-  nameModal.querySelector('p').textContent = userName ? 'Enter a new name below.' : "What's your name?";
+  nameModal.querySelector('p').textContent  = userName ? 'Enter a new name below.' : "What's your name?";
   nameModal.classList.remove('hidden');
   setTimeout(() => nameInput.focus(), 50);
-});
+}
 
-nameSaveBtn.addEventListener('click', () => {
+function saveName() {
   const name = nameInput.value.trim();
   if (!name) return;
   userName = name;
   save('userName', userName);
   greetingName.textContent = userName + '!';
   nameModal.classList.add('hidden');
-});
+}
 
-nameInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') nameSaveBtn.click();
-});
+greetingName.addEventListener('click', openNameModal);
+nameSaveBtn.addEventListener('click', saveName);
+nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
 
-// ===== DARK MODE =====
+// ===== THEME =====
 function applyTheme() {
-  if (isDark) {
-    document.body.classList.add('dark');
-    themeToggle.textContent = '☀️';
-  } else {
-    document.body.classList.remove('dark');
-    themeToggle.textContent = '🌙';
-  }
+  document.body.classList.toggle('dark', isDark);
+  themeToggle.textContent = isDark ? '☀️' : '🌙';
 }
 
 themeToggle.addEventListener('click', () => {
@@ -146,41 +115,31 @@ themeToggle.addEventListener('click', () => {
 
 // ===== POINTS =====
 function calcPoints() {
-  // 5 pts per 10 minutes of timer duration
-  const mins = parseInt(timerDuration.value) || 25;
-  return Math.max(5, Math.ceil(mins / 10) * 5);
+  return Math.max(5, Math.ceil((parseInt(timerDuration.value) || 25) / 10) * 5);
 }
 
 function renderPoints() {
   pointsDisplay.textContent = totalPoints;
 }
 
-// ===== TO-DO LIST =====
+// ===== TASKS =====
 function getSortedTasks() {
-  // Priority tasks always on top (unless done), then the rest in original order
   const priority = tasks.filter(t => t.priority && !t.done);
-  const normal   = tasks.filter(t => !t.priority || t.done);
-  return [...priority, ...normal];
+  const rest     = tasks.filter(t => !t.priority || t.done);
+  return [...priority, ...rest];
 }
 
 function renderTasks() {
   todoList.innerHTML = '';
-  if (tasks.length === 0) {
-    todoEmpty.style.display = 'block';
-    return;
-  }
-  todoEmpty.style.display = 'none';
+  todoEmpty.style.display = tasks.length === 0 ? 'block' : 'none';
+  if (tasks.length === 0) return;
 
-  const sorted = getSortedTasks();
-
-  sorted.forEach((task) => {
-    // Find real index in tasks array (needed for mutations)
+  getSortedTasks().forEach(task => {
     const index = tasks.indexOf(task);
 
     const li = document.createElement('li');
-    li.className = 'todo-item' +
-      (task.done ? ' done' : '') +
-      (task.priority && !task.done ? ' priority' : '');
+    li.className = ['todo-item', task.done && 'done', task.priority && !task.done && 'priority']
+      .filter(Boolean).join(' ');
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -192,15 +151,10 @@ function renderTasks() {
     span.className = 'task-text';
     span.textContent = task.text;
 
-    const actions = document.createElement('div');
-    actions.className = 'task-actions';
-
-    // ⭐ Priority button
     const starBtn = document.createElement('button');
     starBtn.className = 'btn-star' + (task.priority ? ' active' : '');
     starBtn.textContent = '★';
     starBtn.setAttribute('aria-label', task.priority ? 'Remove priority' : 'Set priority');
-    starBtn.title = task.priority ? 'Remove priority' : 'Set as priority';
     starBtn.addEventListener('click', () => togglePriority(index));
 
     const editBtn = document.createElement('button');
@@ -215,12 +169,11 @@ function renderTasks() {
     delBtn.setAttribute('aria-label', 'Delete task');
     delBtn.addEventListener('click', () => deleteTask(index));
 
-    actions.appendChild(starBtn);
-    actions.appendChild(editBtn);
-    actions.appendChild(delBtn);
-    li.appendChild(checkbox);
-    li.appendChild(span);
-    li.appendChild(actions);
+    const actions = document.createElement('div');
+    actions.className = 'task-actions';
+    actions.append(starBtn, editBtn, delBtn);
+
+    li.append(checkbox, span, actions);
     todoList.appendChild(li);
   });
 }
@@ -229,9 +182,7 @@ function addTask() {
   const text = todoInput.value.trim();
   if (!text) return;
 
-  // Prevent duplicate tasks (case-insensitive)
-  const duplicate = tasks.some(t => t.text.toLowerCase() === text.toLowerCase());
-  if (duplicate) {
+  if (tasks.some(t => t.text.toLowerCase() === text.toLowerCase())) {
     todoInput.style.borderColor = 'var(--danger)';
     todoInput.placeholder = 'Task already exists!';
     setTimeout(() => {
@@ -248,20 +199,18 @@ function addTask() {
 }
 
 function toggleTask(index) {
-  const wasNotDone = !tasks[index].done;
-  tasks[index].done = !tasks[index].done;
+  const completing = !tasks[index].done;
+  tasks[index].done = completing;
 
-  // Kalau task baru selesai → tambah poin & lepas priority
-  if (wasNotDone) {
+  if (completing) {
     totalPoints += calcPoints();
     tasks[index].priority = false;
   } else {
-    // Uncheck → kurangi poin (min 0)
     totalPoints = Math.max(0, totalPoints - calcPoints());
   }
 
-  save('totalPoints', totalPoints);
   save('tasks', tasks);
+  save('totalPoints', totalPoints);
   renderPoints();
   renderTasks();
 }
@@ -285,12 +234,11 @@ function openEditModal(index) {
   editInput.focus();
 }
 
-editSaveBtn.addEventListener('click', () => {
+function saveEdit() {
   const newText = editInput.value.trim();
   if (!newText || editIndex === null) return;
 
-  const duplicate = tasks.some((t, i) => i !== editIndex && t.text.toLowerCase() === newText.toLowerCase());
-  if (duplicate) {
+  if (tasks.some((t, i) => i !== editIndex && t.text.toLowerCase() === newText.toLowerCase())) {
     editInput.style.borderColor = 'var(--danger)';
     return;
   }
@@ -300,24 +248,22 @@ editSaveBtn.addEventListener('click', () => {
   editModal.classList.add('hidden');
   editIndex = null;
   renderTasks();
-});
+}
 
-editCancelBtn.addEventListener('click', () => {
+function cancelEdit() {
   editModal.classList.add('hidden');
   editIndex = null;
-});
+}
 
+editSaveBtn.addEventListener('click', saveEdit);
+editCancelBtn.addEventListener('click', cancelEdit);
 editInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') editSaveBtn.click();
-  if (e.key === 'Escape') editCancelBtn.click();
+  if (e.key === 'Enter') saveEdit();
+  if (e.key === 'Escape') cancelEdit();
 });
 
-// Sort A-Z / Z-A
 sortBtn.addEventListener('click', () => {
-  tasks.sort((a, b) => {
-    const cmp = a.text.localeCompare(b.text);
-    return sortAsc ? cmp : -cmp;
-  });
+  tasks.sort((a, b) => sortAsc ? a.text.localeCompare(b.text) : b.text.localeCompare(a.text));
   sortAsc = !sortAsc;
   sortBtn.textContent = sortAsc ? '⇅ Sort A–Z' : '⇅ Sort Z–A';
   save('tasks', tasks);
@@ -325,15 +271,11 @@ sortBtn.addEventListener('click', () => {
 });
 
 addTodoBtn.addEventListener('click', addTask);
-todoInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') addTask();
-});
+todoInput.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
-// ===== FOCUS TIMER =====
+// ===== TIMER =====
 function formatTime(secs) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
 }
 
 function updateTimerDisplay() {
@@ -350,8 +292,7 @@ timerStart.addEventListener('click', () => {
     if (timerSeconds <= 0) {
       clearInterval(timerInterval);
       timerRunning = false;
-      timerDisplay.classList.remove('running');
-      timerDisplay.classList.add('finished');
+      timerDisplay.classList.replace('running', 'finished');
       timerDisplay.textContent = 'Done! 🎉';
       return;
     }
@@ -369,31 +310,25 @@ timerStop.addEventListener('click', () => {
 timerReset.addEventListener('click', () => {
   clearInterval(timerInterval);
   timerRunning = false;
-  timerSeconds = parseInt(timerDuration.value) * 60 || 25 * 60;
+  timerSeconds = (parseInt(timerDuration.value) || 25) * 60;
   timerDisplay.classList.remove('running', 'finished');
   updateTimerDisplay();
 });
 
 timerDuration.addEventListener('change', () => {
   if (!timerRunning) {
-    timerSeconds = parseInt(timerDuration.value) * 60 || 25 * 60;
+    timerSeconds = (parseInt(timerDuration.value) || 25) * 60;
     updateTimerDisplay();
   }
 });
 
-// ===== QUICK LINKS =====
+// ===== LINKS =====
 function renderLinks() {
   linksContainer.innerHTML = '';
-  if (links.length === 0) {
-    linksEmpty.style.display = 'block';
-    return;
-  }
-  linksEmpty.style.display = 'none';
+  linksEmpty.style.display = links.length === 0 ? 'block' : 'none';
+  if (links.length === 0) return;
 
   links.forEach((link, index) => {
-    const chip = document.createElement('div');
-    chip.className = 'link-chip';
-
     const a = document.createElement('a');
     a.href = link.url;
     a.target = '_blank';
@@ -410,33 +345,29 @@ function renderLinks() {
       renderLinks();
     });
 
-    chip.appendChild(a);
-    chip.appendChild(delBtn);
+    const chip = document.createElement('div');
+    chip.className = 'link-chip';
+    chip.append(a, delBtn);
     linksContainer.appendChild(chip);
   });
 }
 
 function addLink() {
   const name = linkName.value.trim();
-  let url = linkUrl.value.trim();
+  let url    = linkUrl.value.trim();
   if (!name || !url) return;
 
-  // Auto-add https:// if missing
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
-  }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
   links.push({ name, url });
   save('links', links);
   linkName.value = '';
-  linkUrl.value = '';
+  linkUrl.value  = '';
   renderLinks();
 }
 
 addLinkBtn.addEventListener('click', addLink);
-linkUrl.addEventListener('keydown', e => {
-  if (e.key === 'Enter') addLink();
-});
+linkUrl.addEventListener('keydown', e => { if (e.key === 'Enter') addLink(); });
 
 // ===== INIT =====
 function init() {
